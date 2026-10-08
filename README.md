@@ -4,11 +4,9 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Portfolio%20Project-brightgreen)
 ![No AI](https://img.shields.io/badge/AI%20Calls-None-orange)
-![Docker](https://img.shields.io/badge/Docker-Not%20Required-lightgrey)
-
 A local business discovery and lead qualification tool that finds businesses by trade and location using **three discovery sources**, scores them automatically, and exports qualified leads — all in **dependency-free Python**.
 
-This project started as a Google Maps scraping script and was redesigned as a clean, professional portfolio project. The goal is to build a practical lead-finding pipeline that works without paid services, without Docker, and without any AI calls.
+This project started as a Google Maps scraping script and was redesigned as a clean, professional portfolio project. The goal is to build a practical lead-finding pipeline that works without paid services and without any AI calls.
 
 ---
 
@@ -18,7 +16,7 @@ Finding local businesses that could use professional services — a new website,
 
 It searches across **three sources**, deduplicates results, extracts emails from business websites, and scores every lead on a 0–100 scale. The web UI shows everything on a map with filters, export, and a settings panel.
 
-> No AI. No subscriptions. No Docker. Runs on your machine with your own (optional) API keys.
+> No AI. No subscriptions. Runs on your machine with your own (optional) API keys.
 
 ---
 
