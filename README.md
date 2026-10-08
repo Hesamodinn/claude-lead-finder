@@ -363,7 +363,7 @@ Software Developer
 
 - **Bug report**: [Open an issue](https://github.com/Hesamodinn/claude-lead-finder/issues/new)
 - **Feature request**: [Open an issue](https://github.com/Hesamodinn/claude-lead-finder/issues/new)
-- **Pull requests welcome** — contributions and improvements are appreciated.
+- **Contribute**: Fork, make your changes, and open a pull request to merge your updates.
 
 ---
 
