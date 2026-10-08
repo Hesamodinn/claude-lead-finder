@@ -2,16 +2,18 @@
 name: lead-finder
 description: >
   Find and qualify local businesses by trade and location. Three discovery sources
-  (Google Places API, browser scrape, OpenStreetMap), multi-signal deduplication,
+  (Google Places API, web scraper, OpenStreetMap), multi-signal deduplication,
   email extraction, deterministic scoring, and an interactive results browser.
   Triggers on requests like "find dentists in Denver" or "build a lead list of
   electricians near Folsom, CA".
+  Works with Claude Code, Cursor, Codex CLI, Windsurf, Cline, Aider, or any
+  assistant that can run Python scripts and read JSON output.
 user-invocable: true
 argument-hint: "[trade] in [city]"
 license: MIT
 metadata:
   author: Hesamodinn
-  version: "2.1.0"
+  version: "2.2.0"
   category: marketing
 ---
 
@@ -19,6 +21,9 @@ metadata:
 
 Tested Python scripts in `scripts/` do the actual work — run them and present their
 output. Do not try to find businesses by reasoning or web search alone.
+
+This skill is portable: copy the `skills/lead-finder/` folder into any project's
+`.claude/skills/` directory and it will auto-trigger on lead-finding requests.
 
 ## Commands
 
@@ -40,7 +45,7 @@ Plain language works too. The skill triggers on requests like:
 | Priority | Source | Needs | Speed | Coverage | ToS |
 |----------|--------|-------|-------|----------|-----|
 | 1 | Google Places API | `GOOGLE_PLACES_API_KEY` | ~2 s | Excellent | ✅ Compliant |
-| 2 | Web scrape | Nothing (built-in) | 5–15 s | Good | ⚠️ Violates Google ToS |
+| 2 | Web scraper (Playwright / stdlib) | Nothing (built-in) | 5–15 s | Good | ⚠️ Violates Google ToS |
 | 3 | OpenStreetMap | Nothing | 5–30 s | Sparse | ✅ Free / open |
 
 `--source auto` (default) tries them in order. Force one with `--source api|scrape|osm`.

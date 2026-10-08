@@ -185,9 +185,23 @@ The map uses OpenStreetMap tiles. No API key needed for the UI itself.
 
 ---
 
-## 🤖 Using it in Claude Code
+## 🤖 Using it with AI Coding Assistants
 
-### Slash Commands
+The tool works as an **agent skill** — any AI coding assistant that can run terminal commands can use it. The scripts are plain Python with structured JSON output, so they integrate naturally.
+
+### Tested With
+
+| Assistant | How it works |
+|-----------|-------------|
+| **Claude Code** | Slash commands (`/lead-find`, `/lead-batch`) + skill file auto-triggers on natural language |
+| **Cursor** | Agent mode runs the scripts, reads JSON output, presents results |
+| **Codex CLI** | Runs scripts directly from the terminal |
+| **Windsurf** | Agent executes scripts and formats the output |
+| **Cline / Aider** | Any assistant that can call `python scripts/find_businesses.py` works |
+
+All you need is an assistant that can run a shell command and read the JSON it returns. No special API, no plugin, no integration code.
+
+### Claude Code — Slash Commands
 
 | Command | Action |
 |---------|--------|
@@ -196,9 +210,9 @@ The map uses OpenStreetMap tiles. No API key needed for the UI itself.
 | `/lead-setup` | Health-check all discovery sources |
 | `/lead-jobs` | List cached search results |
 
-### Plain Language
+### Claude Code — Plain Language
 
-The skill in `.claude/` triggers on natural requests:
+The skill in `.claude/` and `skills/` triggers on natural requests:
 
 - *"Find electricians near Folsom, CA"*
 - *"Build me a lead list of dentists in Denver, CO"*
@@ -207,9 +221,23 @@ The skill in `.claude/` triggers on natural requests:
 
 Claude translates your words into the right script call — you never need to remember CLI flags.
 
-### Without Claude
+### Adding as a Claude Skill
 
-`scripts/find_businesses.py` is a standalone, dependency-free Python CLI. No Claude, no AI, no account needed.
+Copy the `skills/lead-finder/` folder into your own project's `.claude/skills/` directory:
+
+```bash
+cp -r skills/lead-finder/ /path/to/your-project/.claude/skills/lead-finder/
+```
+
+Then any Claude Code session in that project will auto-discover the skill and respond to lead-finding requests.
+
+### Without Any AI
+
+`scripts/find_businesses.py` is a standalone, dependency-free Python CLI. No AI assistant, no account, no subscription needed.
+
+```bash
+python scripts/find_businesses.py "Folsom, CA" electrician --review
+```
 
 ---
 
