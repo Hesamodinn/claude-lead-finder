@@ -359,6 +359,33 @@ Software Developer
 
 ---
 
+## 🐛 Issues & Contributing
+
+Found a bug or have an idea?
+
+- **Bug report**: [Open an issue](https://github.com/Hesamodinn/claude-lead-finder/issues/new) with the command you ran, what you expected, and what happened instead.
+- **Feature request**: [Open an issue](https://github.com/Hesamodinn/claude-lead-finder/issues/new) describing what you need and why.
+- **Pull request**: Fork the repo, make your changes, and open a PR. Keep it dependency-free — standard library only.
+
+```bash
+# Fork and clone
+git clone https://github.com/YOUR_USERNAME/claude-lead-finder.git
+cd claude-lead-finder
+
+# Create a branch
+git checkout -b fix/your-fix-name
+
+# Make changes, test locally
+python server.py
+
+# Push and open a PR
+git push origin fix/your-fix-name
+```
+
+Please keep PRs focused — one fix or feature per PR. No new dependencies unless absolutely necessary.
+
+---
+
 ## 📄 License
 
 This project is available under the [MIT License](LICENSE).
