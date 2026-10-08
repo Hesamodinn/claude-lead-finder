@@ -10,7 +10,7 @@ Examples:
 Steps:
 1. Run `python scripts/find_businesses.py "<city>" <category>` with the right flags.
    Use `--list-categories` to check if the trade is a built-in category.
-   For trades not in the list, use `--query "<trade>"` (needs Google API or Docker scraper).
+   For trades not in the list, use `--query "<trade>"` (needs Google API or web scraper).
 2. Add `--review` to generate the interactive results browser.
 3. Present a summary: total found, how many have email, how many score ≥ 70.
 4. For the top leads (score ≥ 70), explain *why* they scored well (the `reasons` field).
