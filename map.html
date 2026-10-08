@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lead Finder</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#1e1e2e;
+  --border2:#2a2a3a;--text:#e4e4ed;--text2:#9494a8;--text3:#5a5a6e;
+  --blue:#6366f1;--blue2:#818cf8;--green:#22c55e;--green2:#4ade80;
+  --amber:#f59e0b;--red:#ef4444;--purple:#a855f7;
+  --radius:12px;--radius-sm:8px;--radius-lg:16px;
+}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);
+     overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr}
+#map{width:100%;height:38vh;min-height:240px}
+.leaflet-control-attribution{font-size:10px!important;background:rgba(10,10,15,.7)!important;color:var(--text3)!important}
+.leaflet-control-attribution a{color:var(--text2)!important}
+.main{padding:24px 28px 40px;max-width:960px;margin:0 auto;width:100%}
+
+/* header */
+.header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.logo{width:36px;height:36px;background:linear-gradient(135deg,var(--blue),var(--purple));
+      border-radius:10px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.header h1{font-size:1.15rem;font-weight:700;letter-spacing:-.02em}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.badge{font-size:.65rem;padding:3px 8px;border-radius:20px;font-weight:600;
+       background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.gear-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);
+          background:var(--surface);color:var(--text3);cursor:pointer;display:grid;place-items:center;
+          transition:all .2s;font-size:16px}
+.gear-btn:hover{border-color:var(--text3);color:var(--text);background:var(--surface2)}
+
+/* source pills */
+.sources{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.source{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+        font-size:.72rem;font-weight:500;border:1px solid var(--border2);background:var(--surface);color:var(--text3);
+        cursor:pointer;transition:all .2s}
+.source:hover{border-color:var(--text3)}
+.source.on{border-color:color-mix(in srgb,var(--green) 30%,transparent);color:var(--green2);
+           background:color-mix(in srgb,var(--green) 6%,var(--surface))}
+.source.off{border-color:var(--border);color:var(--text3)}
+.source .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      padding:20px;margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr auto auto;gap:12px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:.72rem;font-weight:500;color:var(--text3);letter-spacing:.03em}
+input[type=text],input[type=password],select{background:var(--bg);border:1px solid var(--border2);
+  border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:.85rem;
+  font-family:inherit;transition:border .15s;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--blue)}
+input::placeholder{color:var(--text3)}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235a5a6e'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+       background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:100px;
+      font-size:.78rem;font-weight:500;cursor:pointer;user-select:none;transition:all .2s;
+      border:1px solid var(--border2);background:var(--surface);color:var(--text3)}
+.chip:hover{border-color:var(--text3);color:var(--text2)}
+.chip input{display:none}
+.chip.active{color:#fff}
+.chip .indicator{width:7px;height:7px;border-radius:50%;transition:background .2s}
+.chip.active .indicator{box-shadow:0 0 8px currentColor}
+.chip[data-color=red].active{background:color-mix(in srgb,var(--red) 15%,var(--surface));
+  border-color:color-mix(in srgb,var(--red) 40%,transparent);color:var(--red)}
+.chip[data-color=red] .indicator{background:var(--red)}
+.chip[data-color=green].active{background:color-mix(in srgb,var(--green) 15%,var(--surface));
+  border-color:color-mix(in srgb,var(--green) 40%,transparent);color:var(--green2)}
+.chip[data-color=green] .indicator{background:var(--green)}
+.chip[data-color=amber].active{background:color-mix(in srgb,var(--amber) 15%,var(--surface));
+  border-color:color-mix(in srgb,var(--amber) 40%,transparent);color:var(--amber)}
+.chip[data-color=amber] .indicator{background:var(--amber)}
+.chip[data-color=blue].active{background:color-mix(in srgb,var(--blue) 15%,var(--surface));
+  border-color:color-mix(in srgb,var(--blue) 40%,transparent);color:var(--blue2)}
+.chip[data-color=blue] .indicator{background:var(--blue2)}
+.chip[data-color=purple].active{background:color-mix(in srgb,var(--purple) 15%,var(--surface));
+  border-color:color-mix(in srgb,var(--purple) 40%,transparent);color:var(--purple)}
+.chip[data-color=purple] .indicator{background:var(--purple)}
+
+/* action row */
+.action-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.coords{flex:1;min-width:180px;font-size:.8rem;color:var(--text3)}
+.coords strong{color:var(--text2)}
+.btn{padding:10px 22px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;
+     cursor:pointer;border:none;color:#fff;transition:all .2s;display:inline-flex;align-items:center;
+     gap:7px;font-family:inherit}
+.btn-run{background:linear-gradient(135deg,var(--green),#16a34a);box-shadow:0 2px 12px rgba(34,197,94,.25)}
+.btn-run:hover{box-shadow:0 4px 20px rgba(34,197,94,.35);transform:translateY(-1px)}
+.btn-run:disabled{background:var(--surface2);color:var(--text3);box-shadow:none;transform:none;cursor:not-allowed}
+.btn-run:active:not(:disabled){transform:translateY(0)}
+.btn-sm{padding:7px 14px;font-size:.78rem;font-weight:500}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--text3);color:var(--text)}
+.btn-blue{background:var(--blue);box-shadow:0 2px 10px rgba(99,102,241,.2)}
+.btn-blue:hover{box-shadow:0 4px 16px rgba(99,102,241,.3)}
+.btn-amber{background:var(--amber);color:#000}
+.cmd-toggle{font-size:.75rem;color:var(--text3);cursor:pointer;transition:color .15s;
+            padding:6px 10px;border-radius:6px}
+.cmd-toggle:hover{color:var(--text2);background:var(--surface2)}
+
+/* log panel */
+.log-wrap{margin-top:16px;display:none;animation:fadeIn .3s ease}
+.log-wrap.show{display:block}
+.log{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+     padding:14px 18px;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;
+     font-size:.76rem;color:var(--text3);max-height:180px;overflow-y:auto;line-height:1.7}
+.log::-webkit-scrollbar{width:4px}
+.log::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.log .ok{color:var(--green2)}
+.log .warn{color:var(--amber)}
+.log .err{color:var(--red)}
+.log .info{color:var(--blue2)}
+.log .cache{color:var(--purple)}
+
+/* commands */
+.cmd-section{margin-top:14px;display:none;animation:fadeIn .3s ease}
+.cmd-section.show{display:block}
+.cmd-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+         padding:14px 18px;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;
+         font-size:.78rem;line-height:1.6;color:var(--blue2);word-break:break-all;
+         position:relative;margin-top:8px}
+.cmd-box .lbl{font-size:.62rem;font-weight:600;color:var(--text3);position:absolute;top:6px;right:10px;
+              text-transform:uppercase;letter-spacing:.08em}
+.cmd-btns{display:flex;gap:6px;margin-top:8px}
+
+/* results */
+.results-wrap{margin-top:20px;display:none;animation:fadeIn .3s ease}
+.results-wrap.show{display:block}
+.results-header{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.results-header input{width:200px}
+.results-count{color:var(--text3);font-size:.78rem;margin-left:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{text-align:left;padding:10px 10px;border-bottom:1px solid var(--border2);color:var(--text3);
+   font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;
+   cursor:pointer;user-select:none;white-space:nowrap;transition:color .15s}
+th:hover{color:var(--text)}
+th .arr{font-size:.6rem;margin-left:3px;opacity:.6}
+td{padding:10px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr{transition:background .15s}
+tr:hover{background:color-mix(in srgb,var(--blue) 4%,var(--surface))}
+tr.pinned{background:color-mix(in srgb,var(--blue) 10%,var(--surface))}
+tr.pinned td:first-child::before{content:"\1F4CC "}
+.score{display:inline-block;min-width:32px;text-align:center;padding:3px 10px;
+       border-radius:100px;font-weight:700;font-size:.75rem}
+.s-high{background:color-mix(in srgb,var(--green) 18%,var(--surface));color:var(--green2)}
+.s-mid{background:color-mix(in srgb,var(--amber) 18%,var(--surface));color:var(--amber)}
+.s-low{background:color-mix(in srgb,var(--red) 18%,var(--surface));color:var(--red)}
+a{color:var(--blue2);text-decoration:none;transition:color .15s}
+a:hover{color:var(--blue);text-decoration:underline}
+.tag{font-size:.68rem;color:var(--text3);display:block;margin-top:2px}
+.empty-msg{color:var(--text3);text-align:center;padding:40px;font-size:.88rem}
+footer{margin-top:28px;color:var(--text3);font-size:.72rem;text-align:center;padding-bottom:24px}
+footer a{color:var(--text2)}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+          z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+       padding:28px;width:90%;max-width:480px;animation:fadeIn .2s ease}
+.modal h2{font-size:1rem;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.modal .close{margin-left:auto;cursor:pointer;color:var(--text3);font-size:1.2rem;
+              width:28px;height:28px;display:grid;place-items:center;border-radius:6px;border:none;background:none}
+.modal .close:hover{background:var(--surface2);color:var(--text)}
+.modal .field{margin-bottom:16px}
+.modal .field label{display:block;font-size:.75rem;font-weight:500;color:var(--text2);margin-bottom:6px}
+.modal .hint{font-size:.72rem;color:var(--text3);margin-top:4px;line-height:1.4}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;
+       border-radius:var(--radius);font-size:.82rem;font-weight:500;z-index:1100;
+       animation:fadeIn .3s ease;pointer-events:none}
+.toast-ok{background:color-mix(in srgb,var(--green) 20%,var(--surface));color:var(--green2);
+          border:1px solid color-mix(in srgb,var(--green) 30%,transparent)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulsing{animation:pulse 1.5s ease-in-out infinite}
+@media(max-width:700px){
+  #map{height:32vh}
+  .main{padding:16px}
+  .form-grid{grid-template-columns:1fr;gap:10px}
+  table{font-size:.74rem}
+  td,th{padding:7px 6px}
+  .results-header input{width:100%}
+  .header h1{font-size:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- settings modal -->
+<div class="modal-bg" id="settings-modal">
+  <div class="modal">
+    <h2>
+      <span>⚙️ Settings</span>
+      <button class="close" onclick="closeSettings()">✕</button>
+    </h2>
+    <div class="field">
+      <label>Google Places API Key</label>
+      <input type="password" id="s-api-key" placeholder="AIza…">
+      <div class="hint">Get one free at <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> → Enable "Places API (New)". Best results, compliant, fast.</div>
+    </div>
+    <div class="field">
+      <label style="color:var(--green2)">Web Scraper</label>
+      <div class="hint">Always available. For best scraping results, install Playwright:<br>
+        <code style="color:var(--blue2)">pip install playwright && playwright install chromium</code><br>
+        Without it, the scraper parses Google web search (limited). Scraping violates Google's ToS; use the API key for production.</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-blue btn-sm" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+<div id="map"></div>
+<div class="main">
+
+  <!-- header -->
+  <div class="header">
+    <div class="logo">🔍</div>
+    <h1>Lead Finder</h1>
+    <div class="header-right">
+      <span class="badge">v2.1</span>
+      <button class="gear-btn" onclick="openSettings()" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <!-- source status -->
+  <div class="sources" id="sources">
+    <div class="source off" id="src-api" onclick="openSettings()" title="Click to configure"><span class="dot"></span>Google API</div>
+    <div class="source on" id="src-scraper"><span class="dot"></span>Web Scraper</div>
+    <div class="source off" id="src-playwright" style="display:none"><span class="dot"></span>Playwright</div>
+    <div class="source on" id="src-osm"><span class="dot"></span>OpenStreetMap</div>
+  </div>
+
+  <!-- search card -->
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">What are you looking for?</label>
+        <input type="text" id="query" placeholder="electricians, dentists, plumbers, coffee shops …">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Radius</label>
+        <select id="radius">
+          <option value="3000">3 km</option>
+          <option value="5000">5 km</option>
+          <option value="8000" selected>8 km</option>
+          <option value="12000">12 km</option>
+          <option value="20000">20 km</option>
+          <option value="30000">30 km</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max results</label>
+        <select id="limit">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="form-group" style="justify-content:end">
+        <button class="btn btn-run" id="run-btn" onclick="runSearch()" disabled>
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><polygon points="3,1 13,8 3,15"/></svg>
+          Run
+        </button>
+      </div>
+    </div>
+
+    <!-- filter chips -->
+    <div class="chips">
+      <label class="chip active" data-color="red">
+        <input type="checkbox" id="f-nosite" checked>
+        <span class="indicator"></span>No website
+      </label>
+      <label class="chip" data-color="green">
+        <input type="checkbox" id="f-site">
+        <span class="indicator"></span>Has website
+      </label>
+      <label class="chip" data-color="amber">
+        <input type="checkbox" id="f-email">
+        <span class="indicator"></span>Has email
+      </label>
+      <label class="chip" data-color="blue">
+        <input type="checkbox" id="f-phone">
+        <span class="indicator"></span>Has phone
+      </label>
+      <label class="chip" data-color="purple">
+        <input type="checkbox" id="f-social">
+        <span class="indicator"></span>Social media
+      </label>
+    </div>
+
+    <!-- action row -->
+    <div class="action-row">
+      <span class="coords" id="coords">Click the map to pick a location</span>
+      <span class="cmd-toggle" onclick="toggleCmds()">⌘ Commands</span>
+    </div>
+  </div>
+
+  <!-- log -->
+  <div class="log-wrap" id="log-wrap"><div class="log" id="log"></div></div>
+
+  <!-- commands -->
+  <div class="cmd-section" id="cmd-section">
+    <div class="cmd-box"><span class="lbl">Terminal</span><span id="cmd-text"></span></div>
+    <div class="cmd-btns"><button class="btn btn-ghost btn-sm" onclick="copyCmd()">📋 Copy command</button></div>
+    <div class="cmd-box" style="margin-top:12px"><span class="lbl">Claude</span><span id="claude-text"></span></div>
+    <div class="cmd-btns"><button class="btn btn-ghost btn-sm" onclick="copyClaude()">📋 Copy prompt</button></div>
+  </div>
+
+  <!-- results table -->
+  <div class="results-wrap" id="results-wrap">
+    <div class="results-header">
+      <input type="text" id="rq" placeholder="Filter results …" oninput="renderResults()">
+      <button class="btn btn-ghost btn-sm" onclick="exportJSON()">⤓ JSON</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ CSV</button>
+      <button class="btn btn-ghost btn-sm" id="export-sel-btn" onclick="exportSelectedJSON()" style="display:none">⤓ Selected</button>
+      <span class="results-count" id="results-count"></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th data-k="score">Score <span class="arr"></span></th>
+        <th data-k="name">Name <span class="arr"></span></th>
+        <th data-k="rating">Rating <span class="arr"></span></th>
+        <th data-k="reviews">Reviews <span class="arr"></span></th>
+        <th data-k="email">Email <span class="arr"></span></th>
+        <th data-k="phone">Phone <span class="arr"></span></th>
+        <th data-k="website">Website <span class="arr"></span></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty-msg" id="empty-msg" style="display:none">No results match your filters.</div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/Hesamodinn/claude-lead-finder" target="_blank">claude-lead-finder</a> · open source · no AI calls — pure search + scoring
+  </footer>
+</div>
+</div>
+
+<script>
+// --- map ---
+const map = L.map("map", {zoomControl: false}).setView([43.25, -79.87], 11);
+L.control.zoom({position: "topright"}).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+let marker = null, circle = null, lat = null, lon = null;
+let cityName = "";
+let results = [], pinned = new Set();
+let sort = {k: "score", d: -1};
+
+// --- settings ---
+function openSettings() {
+  fetch("/api/settings").then(r => r.json()).then(d => {
+    document.getElementById("s-api-key").value = d.google_api_key || "";
+  }).catch(() => {});
+  document.getElementById("settings-modal").classList.add("show");
+}
+function closeSettings() { document.getElementById("settings-modal").classList.remove("show"); }
+function saveSettings() {
+  const body = {
+    google_api_key: document.getElementById("s-api-key").value.trim(),
+  };
+  fetch("/api/settings", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)})
+    .then(r => r.json()).then(() => {
+      closeSettings();
+      checkSources();
+      toast("Settings saved");
+    });
+}
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast toast-ok"; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// --- source status ---
+function checkSources() {
+  fetch("/api/sources").then(r => r.json()).then(d => {
+    tog("src-api", d.api);
+    tog("src-scraper", d.scraper);
+    if (d.playwright) {
+      const el = document.getElementById("src-playwright");
+      el.style.display = ""; tog("src-playwright", true);
+    }
+  }).catch(() => {});
+}
+function tog(id, on) {
+  const el = document.getElementById(id);
+  el.classList.toggle("on", on);
+  el.classList.toggle("off", !on);
+}
+checkSources();
+
+// --- reverse geocode ---
+function reverseGeocode(lt, ln) {
+  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lt}&lon=${ln}&format=json&zoom=10`)
+    .then(r => r.json()).then(d => {
+      const a = d.address || {};
+      cityName = a.city || a.town || a.village || a.municipality || a.county || "";
+      if (a.state) cityName += ", " + a.state;
+      updateUI();
+    }).catch(() => {});
+}
+
+function radiusM() { return parseInt(document.getElementById("radius").value); }
+function fil(id) { return document.getElementById(id).checked; }
+
+// chip toggle
+document.querySelectorAll(".chip input").forEach(cb => {
+  cb.addEventListener("change", () => {
+    cb.closest(".chip").classList.toggle("active", cb.checked);
+    updateUI();
+  });
+});
+
+function updateUI() {
+  if (lat == null) return;
+  const q = document.getElementById("query").value.trim();
+  const r = radiusM();
+  const km = (r / 1000).toFixed(0);
+  const noSite = fil("f-nosite"), hasSite = fil("f-site");
+  let mode = "both";
+  if (noSite && !hasSite) mode = "no_website";
+  else if (hasSite && !noSite) mode = "has_website";
+
+  document.getElementById("coords").innerHTML =
+    `<strong>${lat.toFixed(4)}, ${lon.toFixed(4)}</strong>` +
+    (cityName ? ` &middot; ${cityName}` : "") + ` &middot; ${km} km`;
+
+  document.getElementById("run-btn").disabled = false;
+
+  // CLI command
+  let cmd = `python scripts/find_businesses.py`;
+  const qLow = q.toLowerCase().replace(/s$/, "");
+  const knownCats = {
+    "restaurant":"restaurant","cafe":"restaurant","bistro":"restaurant","coffee":"restaurant",
+    "salon":"salon","hair salon":"salon","barber":"salon","beauty salon":"salon","nail salon":"salon",
+    "gym":"gym","fitness":"gym","yoga":"gym",
+    "dentist":"dentist","dental":"dentist","orthodontist":"dentist",
+    "clinic":"clinic","doctor":"clinic","chiropractor":"clinic","physiotherapy":"clinic","veterinary":"clinic",
+    "electrician":"electrician","electrical":"electrician",
+    "plumber":"plumber","plumbing":"plumber","drain":"plumber",
+    "trade":"trades","contractor":"trades","roofer":"trades","hvac":"trades","painter":"trades","carpenter":"trades","handyman":"trades",
+    "auto":"auto","mechanic":"auto","tire":"auto",
+    "lawyer":"lawyer","attorney":"lawyer","law firm":"lawyer",
+    "real estate":"realestate","realtor":"realestate",
+    "accountant":"accountant","bookkeeper":"accountant",
+    "insurance":"insurance",
+    "cleaner":"cleaner","cleaning":"cleaner","janitorial":"cleaner",
+    "pet":"petcare","veterinarian":"petcare","dog":"petcare",
+    "photographer":"photographer","videographer":"photographer",
+    "tutor":"tutor","tutoring":"tutor"
+  };
+  const matchedCat = knownCats[qLow];
+  if (matchedCat) cmd += ` "${lat.toFixed(5)}, ${lon.toFixed(5)}" ${matchedCat}`;
+  else if (q) cmd += ` --query "${q}" "${lat.toFixed(5)}, ${lon.toFixed(5)}"`;
+  else cmd += ` "${lat.toFixed(5)}, ${lon.toFixed(5)}"`;
+  cmd += ` --radius ${r} --mode ${mode} --review`;
+  document.getElementById("cmd-text").textContent = cmd;
+
+  // Claude prompt
+  const what = q || "businesses";
+  let claude = `Find ${what}`;
+  if (cityName) claude += ` near ${cityName}`;
+  else claude += ` within ${km} km of ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  const parts = [];
+  if (mode === "no_website") parts.push("no website");
+  else if (mode === "has_website") parts.push("a website");
+  if (fil("f-email")) parts.push("an email");
+  if (fil("f-phone")) parts.push("a phone number");
+  if (fil("f-social")) parts.push("social media profiles");
+  if (parts.length === 1) claude += ` that have ${parts[0]}`;
+  else if (parts.length > 1) claude += ` that have ${parts.slice(0,-1).join(", ")} and ${parts[parts.length-1]}`;
+  claude += ". Show me the best leads.";
+  document.getElementById("claude-text").textContent = claude;
+
+  // circle
+  if (circle) map.removeLayer(circle);
+  circle = L.circle([lat, lon], {
+    radius: r, color: "#6366f1", fillColor: "#6366f1", fillOpacity: 0.06, weight: 1.5
+  }).addTo(map);
+}
+
+map.on("click", function(e) {
+  lat = e.latlng.lat; lon = e.latlng.lng; cityName = "";
+  if (marker) map.removeLayer(marker);
+  marker = L.marker([lat, lon], {draggable: true}).addTo(map);
+  marker.on("dragend", function() {
+    lat = marker.getLatLng().lat; lon = marker.getLatLng().lng;
+    reverseGeocode(lat, lon); updateUI();
+  });
+  reverseGeocode(lat, lon); updateUI();
+});
+
+document.getElementById("query").oninput = updateUI;
+document.getElementById("radius").onchange = updateUI;
+document.getElementById("limit").onchange = updateUI;
+
+// commands toggle
+let cmdsVisible = false;
+function toggleCmds() {
+  cmdsVisible = !cmdsVisible;
+  document.getElementById("cmd-section").classList.toggle("show", cmdsVisible);
+  document.querySelector(".cmd-toggle").textContent = cmdsVisible ? "⌘ Hide" : "⌘ Commands";
+}
+function copyCmd() { navigator.clipboard.writeText(document.getElementById("cmd-text").textContent); toast("Copied!"); }
+function copyClaude() { navigator.clipboard.writeText(document.getElementById("claude-text").textContent); toast("Copied!"); }
+
+// --- run search (SSE) ---
+let running = false;
+function runSearch() {
+  if (lat == null || running) return;
+  running = true;
+  const btn = document.getElementById("run-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="pulsing">&#9203;</span> Running &hellip;';
+  const logEl = document.getElementById("log");
+  logEl.innerHTML = "";
+  document.getElementById("log-wrap").classList.add("show");
+  document.getElementById("results-wrap").classList.remove("show");
+  results = []; pinned.clear();
+
+  const q = document.getElementById("query").value.trim();
+  const r = radiusM();
+  const limit = document.getElementById("limit").value;
+  const noSite = fil("f-nosite"), hasSite = fil("f-site");
+  let mode = "both";
+  if (noSite && !hasSite) mode = "no_website";
+  else if (hasSite && !noSite) mode = "has_website";
+
+  const place = cityName || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  const params = new URLSearchParams({
+    query: q, place, radius: r, mode, limit,
+    source: "auto", depth: "5", email: "1", cache: "1"
+  });
+  const es = new EventSource(`/api/search?${params}`);
+
+  function addLog(text, cls) {
+    const d = document.createElement("div");
+    if (cls) d.className = cls;
+    d.textContent = text;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  es.addEventListener("log", e => {
+    if (e.data.startsWith("Sources:")) {
+      tog("src-api", e.data.includes("Google API"));
+    }
+    let cls = "info";
+    if (e.data.startsWith("\u2705") || e.data.startsWith("\uD83D\uDCCA")) cls = "ok";
+    else if (e.data.startsWith("\u26A0") || e.data.includes("error") || e.data.includes("fail")) cls = "warn";
+    else if (e.data.startsWith("\uD83D\uDCE6")) cls = "cache";
+    addLog(e.data, cls);
+  });
+  es.addEventListener("error_event", e => addLog("\u274C " + e.data, "err"));
+  es.addEventListener("results", e => {
+    try { results = JSON.parse(e.data); } catch(x) {}
+    if (fil("f-email")) results = results.filter(r => r.email);
+    if (fil("f-phone")) results = results.filter(r => r.phone);
+    if (results.length) {
+      document.getElementById("results-wrap").classList.add("show");
+      renderResults();
+    }
+  });
+  es.addEventListener("done", () => {
+    es.close(); running = false;
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><polygon points="3,1 13,8 3,15"/></svg> Run';
+    if (!results.length) addLog("No results found.", "warn");
+    checkSources();
+  });
+  es.onerror = () => {
+    es.close(); running = false;
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><polygon points="3,1 13,8 3,15"/></svg> Run';
+    addLog("Connection lost. Is the server running?", "err");
+  };
+}
+
+// --- results table ---
+function val(l, k) {
+  if (k === "score") return l.score || 0;
+  if (k === "rating") return l.rating || 0;
+  if (k === "reviews") return l.review_count || 0;
+  if (k === "email") return l.email || "";
+  if (k === "phone") return l.phone || "";
+  if (k === "website") return l.website || "";
+  return (l.name || "").toLowerCase();
+}
+document.querySelectorAll("th[data-k]").forEach(th => {
+  th.onclick = () => {
+    const k = th.dataset.k;
+    if (sort.k === k) sort.d *= -1; else { sort.k = k; sort.d = -1; }
+    renderResults();
+  };
+});
+
+function renderResults() {
+  const q = (document.getElementById("rq").value || "").toLowerCase();
+  let rows = results.filter(l => {
+    if (q && !(l.name||"").toLowerCase().includes(q) && !(l.email||"").toLowerCase().includes(q)
+        && !(l.phone||"").includes(q) && !(l.city||"").toLowerCase().includes(q)) return false;
+    return true;
+  });
+  rows.sort((a, b) => {
+    const pa = pinned.has(a.id)?1:0, pb = pinned.has(b.id)?1:0;
+    if (pa !== pb) return pb - pa;
+    const va = val(a, sort.k), vb = val(b, sort.k);
+    if (va < vb) return sort.d; if (va > vb) return -sort.d; return 0;
+  });
+  document.querySelectorAll("th[data-k]").forEach(th => {
+    th.querySelector(".arr").textContent = th.dataset.k === sort.k ? (sort.d < 0 ? "\u25BC" : "\u25B2") : "";
+  });
+  const nsel = [...pinned].filter(id => rows.some(r => r.id === id)).length;
+  document.getElementById("export-sel-btn").style.display = nsel ? "" : "none";
+  document.getElementById("results-count").textContent =
+    `${rows.length} results` + (nsel ? ` \u00B7 ${nsel} selected` : "");
+  document.getElementById("empty-msg").style.display = rows.length ? "none" : "";
+  const tb = document.getElementById("tbody"); tb.innerHTML = "";
+  rows.forEach(l => {
+    const tr = document.createElement("tr");
+    if (pinned.has(l.id)) tr.classList.add("pinned");
+    tr.onclick = () => { pinned.has(l.id) ? pinned.delete(l.id) : pinned.add(l.id); renderResults(); };
+    const sc = l.score || 0;
+    const cls = sc >= 70 ? "s-high" : sc >= 40 ? "s-mid" : "s-low";
+    const reasons = (l.reasons || []).join(" \u00B7 ");
+    const domain = (l.website || "").replace(/https?:\/\//, "").replace(/\/.*/, "").slice(0, 30);
+    tr.innerHTML = `
+      <td><span class="score ${cls}">${sc}</span></td>
+      <td>${esc(l.name)}<span class="tag">${esc(reasons)}</span></td>
+      <td>${l.rating != null ? l.rating + " \u2605" : "\u2014"}</td>
+      <td>${l.review_count != null ? l.review_count : "\u2014"}</td>
+      <td>${l.email ? '<a href="mailto:'+esc(l.email)+'">'+esc(l.email)+'</a>' : "\u2014"}</td>
+      <td>${l.phone ? esc(l.phone) : "\u2014"}</td>
+      <td>${domain ? '<a href="'+esc(l.website)+'" target="_blank">'+esc(domain)+'</a>' : "\u2014"}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// --- export ---
+function exportJSON() { dl(results, "leads.json", "application/json"); }
+function exportSelectedJSON() { dl(results.filter(l => pinned.has(l.id)), "selected-leads.json", "application/json"); }
+function dl(data, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));
+  a.download = name; a.click();
+}
+function exportCSV() {
+  // server-side CSV for proper Excel encoding
+  fetch("/api/export-csv", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({results: results})
+  }).then(r => r.blob()).then(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "leads.csv"; a.click();
+  });
+}
+
+// settings modal: close on backdrop click
+document.getElementById("settings-modal").onclick = function(e) {
+  if (e.target === this) closeSettings();
+};
+
+// geolocate
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    map.setView([pos.coords.latitude, pos.coords.longitude], 12);
+  }, () => {}, {timeout: 3000});
+}
+</script>
+</body>
+</html>

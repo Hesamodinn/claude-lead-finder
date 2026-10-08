@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "python scripts/find_businesses.py*",
+      "python scripts/check_presence.py*",
+      "python server.py"
+    ]
+  }
+}

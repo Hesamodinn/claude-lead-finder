@@ -1,0 +1,10 @@
+.env
+excluded.json
+results.html
+results-*.csv
+results-*.json
+data/
+*.pyc
+__pycache__/
+.DS_Store
+Thumbs.db
