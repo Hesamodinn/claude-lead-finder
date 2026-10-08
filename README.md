@@ -170,6 +170,8 @@ This gives the web scraper full browser rendering. Without it, the scraper still
 
 ## 🖥️ Web UI Features
 
+![Web UI](assets/web-ui.png)
+
 | Feature | Description |
 |---------|-------------|
 | Map picker | Click to pin a location (draggable, auto-geocodes to city) |
