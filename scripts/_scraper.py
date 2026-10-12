@@ -153,6 +153,10 @@ def _extract_listing(page, item) -> dict | None:
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if len(lines) < 2:
         return None
+    # Maps packs several fields per line: "Electrician · 558 Upper Gage Ave", "Open · (905) 555-0100"
+    lines = lines[:1] + [p.strip() for l in lines[1:] for p in re.split(r"\s*[·⋅]\s*", l) if p.strip()]
+    if len(lines) < 2:
+        return None
 
     name = lines[0]
     rating = None
@@ -174,7 +178,8 @@ def _extract_listing(page, item) -> dict | None:
             phone = line
             continue
         # address (contains a number and letters)
-        if re.search(r'\d', line) and re.search(r'[A-Za-z]', line) and len(line) > 8:
+        if re.search(r'\d', line) and re.search(r'[A-Za-z]', line) and len(line) > 8 \
+                and not re.match(r'(?i)(open|closed?|closes|opens)\b', line):
             if not address and not re.match(r'^\d\.\d', line):
                 address = line
                 continue

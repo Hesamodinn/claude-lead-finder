@@ -430,6 +430,7 @@ document.querySelectorAll(".chip input").forEach(cb => {
   cb.addEventListener("change", () => {
     cb.closest(".chip").classList.toggle("active", cb.checked);
     updateUI();
+    if (results.length) renderResults();
   });
 });
 
@@ -573,11 +574,9 @@ function runSearch() {
     else if (e.data.startsWith("\uD83D\uDCE6")) cls = "cache";
     addLog(e.data, cls);
   });
-  es.addEventListener("error_event", e => addLog("\u274C " + e.data, "err"));
+  es.addEventListener("search_error", e => addLog("\u274C " + e.data, "err"));
   es.addEventListener("results", e => {
     try { results = JSON.parse(e.data); } catch(x) {}
-    if (fil("f-email")) results = results.filter(r => r.email);
-    if (fil("f-phone")) results = results.filter(r => r.phone);
     if (results.length) {
       document.getElementById("results-wrap").classList.add("show");
       renderResults();
@@ -616,9 +615,16 @@ document.querySelectorAll("th[data-k]").forEach(th => {
   };
 });
 
-function renderResults() {
+// rows that pass the chips + text filter, in display order (also what gets exported)
+function visibleRows() {
   const q = (document.getElementById("rq").value || "").toLowerCase();
+  const noSite = fil("f-nosite"), hasSite = fil("f-site");
+  const email = fil("f-email"), phone = fil("f-phone");
   let rows = results.filter(l => {
+    if (noSite && !hasSite && l.website) return false;
+    if (hasSite && !noSite && !l.website) return false;
+    if (email && !l.email) return false;
+    if (phone && !l.phone) return false;
     if (q && !(l.name||"").toLowerCase().includes(q) && !(l.email||"").toLowerCase().includes(q)
         && !(l.phone||"").includes(q) && !(l.city||"").toLowerCase().includes(q)) return false;
     return true;
@@ -627,8 +633,13 @@ function renderResults() {
     const pa = pinned.has(a.id)?1:0, pb = pinned.has(b.id)?1:0;
     if (pa !== pb) return pb - pa;
     const va = val(a, sort.k), vb = val(b, sort.k);
-    if (va < vb) return sort.d; if (va > vb) return -sort.d; return 0;
+    if (va < vb) return -sort.d; if (va > vb) return sort.d; return 0;
   });
+  return rows;
+}
+
+function renderResults() {
+  const rows = visibleRows();
   document.querySelectorAll("th[data-k]").forEach(th => {
     th.querySelector(".arr").textContent = th.dataset.k === sort.k ? (sort.d < 0 ? "\u25BC" : "\u25B2") : "";
   });
@@ -660,7 +671,7 @@ function renderResults() {
 function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
 
 // --- export ---
-function exportJSON() { dl(results, "leads.json", "application/json"); }
+function exportJSON() { dl(visibleRows(), "leads.json", "application/json"); }
 function exportSelectedJSON() { dl(results.filter(l => pinned.has(l.id)), "selected-leads.json", "application/json"); }
 function dl(data, name) {
   const a = document.createElement("a");
@@ -672,7 +683,7 @@ function exportCSV() {
   fetch("/api/export-csv", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({results: results})
+    body: JSON.stringify({results: visibleRows()})
   }).then(r => r.blob()).then(blob => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);

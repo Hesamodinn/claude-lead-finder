@@ -27,8 +27,11 @@ CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ca
 ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 
 
-def _cache_key(query, place, radius, mode, limit):
-    raw = f"{query}|{place}|{radius}|{mode}|{limit}"
+CACHE_VERSION = 2
+
+
+def _cache_key(query, place, radius, mode, limit, source, depth, find_email):
+    raw = f"v{CACHE_VERSION}|{query}|{place}|{radius}|{mode}|{limit}|{source}|{depth}|{int(find_email)}"
     return hashlib.md5(raw.lower().encode()).hexdigest()
 
 
@@ -97,6 +100,8 @@ class Handler(SimpleHTTPRequestHandler):
             key = body["google_api_key"].strip()
             env["GOOGLE_PLACES_API_KEY"] = key
             os.environ["GOOGLE_PLACES_API_KEY"] = key
+            import _common
+            _common._ENV_FILE = None  # drop the cached .env so discovery sees the change
         _write_env(env)
         self._json_response({"ok": True})
 
@@ -179,7 +184,7 @@ class Handler(SimpleHTTPRequestHandler):
         use_cache = (params.get("cache") or ["1"])[0] == "1"
 
         # check cache
-        ck = _cache_key(query, place, radius, mode, limit)
+        ck = _cache_key(query, place, radius, mode, limit, source, depth, find_email)
         if use_cache:
             cached = _load_cache(ck)
             if cached is not None:
@@ -264,14 +269,14 @@ class Handler(SimpleHTTPRequestHandler):
 
             send_event("results", json.dumps(results))
         except Exception as exc:
-            send_event("error", str(exc)[:300])
+            send_event("search_error", str(exc)[:300])
         finally:
             sys.stderr = old_stderr
 
         send_event("done", "")
 
     def log_message(self, format, *args):
-        if "/api/" not in (args[0] if args else ""):
+        if "/api/" not in (str(args[0]) if args else ""):
             super().log_message(format, *args)
 
 
@@ -315,6 +320,9 @@ def _write_env(env):
 
 def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    # make keys saved in .env visible to the status checks, not just to discovery
+    for k, v in _read_env().items():
+        os.environ.setdefault(k, v)
     server = HTTPServer(("127.0.0.1", PORT), Handler)
     print(f"\n  Lead Finder running at http://localhost:{PORT}\n", flush=True)
     print("  Press Ctrl+C to stop.\n", flush=True)
