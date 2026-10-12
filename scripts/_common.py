@@ -170,7 +170,10 @@ def extract_emails(html: str) -> list[str]:
         seen.add(low)
         local = low.split("@")[0]
         domain = low.split("@")[1] if "@" in low else ""
-        if local in _JUNK_EMAIL_PREFIXES or domain in _JUNK_EMAIL_DOMAINS:
+        if local in _JUNK_EMAIL_PREFIXES or any(
+                domain == d or domain.endswith("." + d) for d in _JUNK_EMAIL_DOMAINS):
+            continue
+        if re.fullmatch(r"[0-9a-f]{24,}", local):  # tracking IDs like Sentry DSNs, not people
             continue
         if domain.endswith(".png") or domain.endswith(".jpg") or domain.endswith(".svg"):
             continue

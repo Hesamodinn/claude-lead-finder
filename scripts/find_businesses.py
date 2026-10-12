@@ -878,6 +878,10 @@ def write_results_html(leads: list[dict], path: str = "results.html") -> str:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    # emoji in logs/help crash cp1252 consoles on Windows when output is piped
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("place", nargs="?",
